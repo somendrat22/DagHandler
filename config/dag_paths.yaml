@@ -1,4 +1,3 @@
 dags:
-  - path: dags\static\abc.py
-  - path: dags\example\xyz.py
-  - path: dags\static\muskan.py
+  - path: dags\example\abcd.py
+  - path: dags\static\efgh.py

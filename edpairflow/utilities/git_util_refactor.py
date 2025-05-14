@@ -1,4 +1,5 @@
 import os
+import logging
 import shutil
 import git
 import time
@@ -23,7 +24,7 @@ class GitUtil:
         self.organization = "somendrat22"
         self.project = "Edp"
 	
-    def clear_target_directory(self):
+    def _clear_target_directory(self):
         if os.path.exists(self.target_path):
             for item in os.listdir(self.target_path):
                 item_path = os.path.join(self.target_path, item)
@@ -41,7 +42,7 @@ class GitUtil:
         username = "AzureDevOps"
         repo_url = f"https://{self.github_token}@dev.azure.com/{self.organization}/{self.project}/_git/{self.repo_name}"
         try:
-            print(self.local_dir)
+            logging.warn("clone: " + self.local_dir)
             git.Repo.clone_from(repo_url, self.local_dir)
             print("Repository cloned successfully")
         except Exception as e:
@@ -49,12 +50,14 @@ class GitUtil:
 
     def _change_directory(self):
         os.chdir(self.local_dir)
+        logging.warn("change_direct: " + self.local_dir)
 
     def _git_pull(self):
         repo = git.Repo(self.local_dir)
         repo.remotes.origin.pull()
 
     def _git_branch(self):
+        logging.warn("branch: " + self.local_dir)
         repo = git.Repo(self.local_dir)
         repo.git.checkout(self.branch)
 
@@ -62,6 +65,7 @@ class GitUtil:
         print(f"Source path: {self.source_path}")
         print(f"Target path: {self.target_path}")
         print(f"Source exists? {os.path.exists(self.source_path)}")
+        print(f"Full source path: {os.path.abspath(self.source_path)}")
         try:
             if os.path.isfile(self.source_path):
                 shutil.copy(self.source_path, self.target_path)
@@ -101,6 +105,7 @@ class GitUtil:
     def git_push_files(self):
         self._git_clone()
         self._change_directory()
+        self._clear_target_directory()
         self._git_branch()
         self._git_pull()
         self._copy_files()

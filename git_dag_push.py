@@ -14,10 +14,12 @@ branch = os.getenv('GIT_REPO_BRANCH')
 github_token = os.getenv('GITSYNC_PASSWORD')
 config_file_path = 'config/dag_paths.yaml'
 
-TEMP_DIR = 'tmp\dag_git_sync'
+
+base_dir = os.getcwd()  # Gets the directory where the script is run from
+TEMP_DIR = os.path.join(base_dir, 'tmp', 'dag_git_sync')
 TEMP_STATIC = os.path.join(TEMP_DIR, 'static')
 TEMP_EXAMPLES = os.path.join(TEMP_DIR, 'examples')
-target_example_path = 'tmp\target\example'
+target_example_path = 'src\\main\\resources'
 target_static_path = 'src\\main\\resources'
 
 
@@ -54,7 +56,7 @@ def process_files():
     if not os.path.exists(dag_folder):
         logging.warning(f"DAG folder {dag_folder} does not exist.")
         return
-    
+
     logging.warning("Calling ")
 
     dag_paths = read_configmap_file()
@@ -66,13 +68,13 @@ def process_files():
     prepare_temp_folders()
     logging.info(dag_paths)
 
-    for path in dag_paths:
-        path_without_prefix = path.replace("dags\\", "")
-        source_file = os.path.join(dag_folder, path_without_prefix)
+    for path in dag_paths: #['dags\\example\\abcd.py', 'dags\\static\\efgh.py']
+        path_without_prefix = path.replace("dags\\", "") # 'example\\abcd.py'
+        source_file = os.path.join(dag_folder, path_without_prefix) #\opt\airflow\nogit\example\\abcd.py
         logging.warning("SourceFile: " + source_file)
 
         if os.path.exists(source_file):
-            file_name = os.path.basename(source_file)
+            file_name = os.path.basename(source_file) #abcd.py
 
             if "example" in path:
                 destination = os.path.join(TEMP_EXAMPLES, file_name)
@@ -81,45 +83,53 @@ def process_files():
             else:
                 logging.warning(f"Skipping unrecognized DAG type: {path}")
                 continue
-            logging.warning("Hey " + destination)
-            shutil.copy2(source_file, destination)
-            logging.info(f"Copied {source_file} to {destination}")
+            logging.warning("Destination: " + destination)
+
+            try:
+                shutil.copy2(source_file, destination)  # Copying the file
+                logging.info(f"Copied {source_file} to {destination}")
+            except Exception as e:
+                logging.error(f"Error copying file: {e}")
         else:
-            logging.warning("Caught")
+            logging.warning(f"Source file {source_file} does not exist.")
+            continue
 
     print(os.getenv('ENABLED_GITSYNC'))
     if os.getenv('ENABLED_GITSYNC') == 'True':
-        logging.warning("Iniside enable git sync -> pushing static files")
+        logging.warning("Inside enabled git sync -> pushing static files")
+        
+        # Absolute path for static_local_path
         base_dir = os.getcwd()  # gets the directory where the script is run from
-        static_local_path = os.path.join(base_dir, dag_repo, 'static')
+        static_local_path = os.path.join(base_dir, 'tmp', dag_repo, 'static')  # Absolute path
+        logging.warning(f"Static local path: {static_local_path}")
+       
 
         git_static = GitUtil(
-            source_path=TEMP_STATIC,
+            TEMP_STATIC,
+            dag_repo,
+            branch,
+            target_static_path,
+            github_token,
+            static_local_path
+        )
+        git_static.git_push_files()
+
+        static_local_path = os.path.join(base_dir, 'tmp', dag_repo, 'example') 
+
+        git_example = GitUtil(
+            source_path=TEMP_EXAMPLES,
             repo_name=dag_repo,
             branch=branch,
             target_path=target_static_path,
             github_token=github_token,
             local_dir=static_local_path
         )
-        git_static.git_push_files()
-		
-        
-
-        # example_local_path = '/tmp/' + dag_repo + '/example'
-        # git_examples = GitUtil(
-        #     source_path=TEMP_EXAMPLES,
-        #     repo_name=dag_repo,
-        #     branch=branch,
-        #     target_path=target_exTemple_path,
-        #     github_token=github_token,
-        #     local_dir=example_local_path
-        # )
-		# git_examples.clear_target_directory()
-		# git_examples._copy_files()
+        git_example.git_push_files()
 
         logging.info(f"Pushed DAG files from temp folder to repo {dag_repo} on branch {branch}.")
     else:
         logging.info("GitSync is disabled. No files pushed.")
+
 
 
 if __name__ == "__main__":
