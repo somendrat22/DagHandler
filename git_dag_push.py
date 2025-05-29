@@ -114,7 +114,7 @@ def process_files():
         )
         git_static.git_push_files()
 
-        static_local_path = os.path.join(base_dir, 'tmp', dag_repo, 'example') 
+        example_local_path = os.path.join(base_dir, 'tmp', dag_repo, 'example') 
 
         git_example = GitUtil(
             source_path=TEMP_EXAMPLES,
@@ -122,7 +122,7 @@ def process_files():
             branch=branch,
             target_path=target_static_path,
             github_token=github_token,
-            local_dir=static_local_path
+            local_dir=example_local_path
         )
         git_example.git_push_files()
 
