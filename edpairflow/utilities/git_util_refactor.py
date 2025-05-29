@@ -3,6 +3,7 @@ import logging
 import shutil
 import git
 import time
+import stat
 
 class GitUtil:
     def __init__(self,
@@ -96,8 +97,15 @@ class GitUtil:
                     raise
 
     def _git_remove_repo(self):
+        def onerror(func, path, exc_info):
+            try:
+                os.chmod(path, stat.S_IWRITE)  # Make the file writable
+                func(path)  # Retry the original operation
+            except Exception as e_inner:
+                print(f"Failed to delete {path}: {e_inner}")
+
         try:
-            shutil.rmtree(self.local_dir)
+            shutil.rmtree(self.local_dir, onerror=onerror)
             print(f"Git repository at {self.local_dir} removed successfully.")
         except Exception as e:
             print(f"Error removing Git repository: {e}")

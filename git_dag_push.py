@@ -100,31 +100,23 @@ def process_files():
         
         # Absolute path for static_local_path
         base_dir = os.getcwd()  # gets the directory where the script is run from
-        static_local_path = os.path.join(base_dir, 'tmp', dag_repo, 'static')  # Absolute path
-        logging.warning(f"Static local path: {static_local_path}")
+        local_path = os.path.join(base_dir, 'tmp', dag_repo, 'local')  # Absolute path
+        logging.warning(f"Static local path: {local_path}")
        
 
-        git_static = GitUtil(
+        git = GitUtil(
             TEMP_STATIC,
             dag_repo,
             branch,
             target_static_path,
             github_token,
-            static_local_path
+            local_path
         )
-        git_static.git_push_files()
+        git.git_push_files()
+        git.source_path = TEMP_EXAMPLES
+        git.target_path = target_example_path
+        git.git_push_files()
 
-        example_local_path = os.path.join(base_dir, 'tmp', dag_repo, 'example') 
-
-        git_example = GitUtil(
-            source_path=TEMP_EXAMPLES,
-            repo_name=dag_repo,
-            branch=branch,
-            target_path=target_static_path,
-            github_token=github_token,
-            local_dir=example_local_path
-        )
-        git_example.git_push_files()
 
         logging.info(f"Pushed DAG files from temp folder to repo {dag_repo} on branch {branch}.")
     else:
